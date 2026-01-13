@@ -38,15 +38,40 @@ function handleZipFileUpload ({ file }: Request, res: Response, next: NextFuncti
             fs.createReadStream(tempFile)
               .pipe(unzipper.Parse())
               .on('entry', function (entry: any) {
-                const fileName = entry.path
-                const absolutePath = path.resolve('uploads/complaints/' + fileName)
-                challengeUtils.solveIf(challenges.fileWriteChallenge, () => { return absolutePath === path.resolve('ftp/legal.md') })
-                if (absolutePath.includes(path.resolve('.'))) {
-                  entry.pipe(fs.createWriteStream('uploads/complaints/' + fileName).on('error', function (err) { next(err) }))
-                } else {
+                const UPLOAD_DIR = path.resolve('uploads/complaints')
+
+                // Normalize & extract filename only
+                const rawName = entry.path
+                const safeName = path.basename(rawName)
+
+                // Reject suspicious filenames
+                if (safeName !== rawName) {
                   entry.autodrain()
+                  return
                 }
-              }).on('error', function (err: unknown) { next(err) })
+
+                const destinationPath = path.join(UPLOAD_DIR, safeName)
+
+                // Ensure final path stays inside upload directory
+                if (!destinationPath.startsWith(UPLOAD_DIR + path.sep)) {
+                  entry.autodrain()
+                  return
+                }
+
+                // Optional challenge logic (kept intact)
+                challengeUtils.solveIf(
+                  challenges.fileWriteChallenge,
+                  () => destinationPath === path.resolve('ftp/legal.md')
+                )
+
+                const writeStream = fs.createWriteStream(destinationPath, { flags: 'wx' })
+
+                writeStream.on('error', (err) => { next(err) })
+                entry.pipe(writeStream)
+              })
+              .on('error', function (err: unknown) {
+                next(err)
+              })
           })
         })
       })
