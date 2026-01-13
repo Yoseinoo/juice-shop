@@ -4,6 +4,7 @@
  */
 
 import { type Request, type Response, type NextFunction } from 'express'
+import { ObjectId } from 'mongodb'
 
 import { ordersCollection } from '../data/mongodb'
 import * as security from '../lib/insecurity'
@@ -31,9 +32,18 @@ export function allOrders () {
 
 export function toggleDeliveryStatus () {
   return async (req: Request, res: Response, next: NextFunction) => {
-    const deliveryStatus = !req.body.deliveryStatus
-    const eta = deliveryStatus ? '0' : '1'
-    await ordersCollection.update({ _id: req.params.id }, { $set: { delivered: deliveryStatus, eta } })
-    res.status(200).json({ status: 'success' })
+  if (!ObjectId.isValid(req.params.id)) {
+    return res.status(400).json({ error: 'Invalid order id' })
   }
+
+  const deliveryStatus = Boolean(req.body.deliveryStatus)
+  const eta = deliveryStatus ? '1' : '0'
+
+  await ordersCollection.updateOne(
+    { _id: new ObjectId(req.params.id) },
+    { $set: { delivered: deliveryStatus, eta } }
+  )
+
+  res.status(200).json({ status: 'success' })
+}
 }
