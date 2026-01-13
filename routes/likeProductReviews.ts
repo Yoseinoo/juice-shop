@@ -53,7 +53,7 @@ export function likeProductReviews () {
         challengeUtils.solveIf(challenges.timingAttackChallenge, () => count > 2)
 
         const result = await db.reviewsCollection.update(
-          { _id: id },
+          { _id: new ObjectId(id) },
           { $set: { likedBy: updatedLikedBy } }
         )
         res.json(result)

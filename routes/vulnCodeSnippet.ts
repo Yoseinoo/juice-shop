@@ -85,9 +85,17 @@ export const checkVulnLines = () => async (req: Request<Record<string, unknown>,
   const neutralLines: number[] = snippetData.neutralLines
   const selectedLines: number[] = req.body.selectedLines
   const verdict = getVerdict(vulnLines, neutralLines, selectedLines)
+  // Build safe absolute path
+  const baseDir = path.resolve('./data/static/codefixes')
+  const filePath = path.join(baseDir, `${key}.info.yml`)
+
+  // Ensure the resolved path is still inside the base directory
+  if (!filePath.startsWith(baseDir + path.sep)) {
+    throw new Error('Path traversal detected')
+  }
   let hint
   if (fs.existsSync('./data/static/codefixes/' + key + '.info.yml')) {
-    const codingChallengeInfos = yaml.load(fs.readFileSync('./data/static/codefixes/' + key + '.info.yml', 'utf8'))
+    const codingChallengeInfos = yaml.load(fs.readFileSync(filePath, 'utf8'))
     if (codingChallengeInfos?.hints) {
       if (accuracy.getFindItAttempts(key) > codingChallengeInfos.hints.length) {
         if (vulnLines.length === 1) {
