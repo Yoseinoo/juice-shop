@@ -21,9 +21,9 @@ export function createProductReviews () {
 
     try {
       await reviewsCollection.insert({
-        product: req.params.id,
-        message: req.body.message,
-        author: req.body.author,
+        product: req.params.id.toString(),
+        message: req.body.message.toString(),
+        author: req.body.author.toString(),
         likesCount: 0,
         likedBy: []
       })

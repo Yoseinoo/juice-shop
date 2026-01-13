@@ -3,7 +3,6 @@
  * SPDX-License-Identifier: MIT
  */
 
-import vm from 'node:vm'
 import { type Request, type Response, type NextFunction } from 'express'
 // @ts-expect-error FIXME due to non-existing type definitions for notevil
 import { eval as safeEval } from 'notevil'
@@ -18,9 +17,7 @@ export function b2bOrder () {
     if (utils.isChallengeEnabled(challenges.rceChallenge) || utils.isChallengeEnabled(challenges.rceOccupyChallenge)) {
       const orderLinesData = body.orderLinesData || ''
       try {
-        const sandbox = { safeEval, orderLinesData }
-        vm.createContext(sandbox)
-        vm.runInContext('safeEval(orderLinesData)', sandbox, { timeout: 2000 })
+        safeEval(orderLinesData)
         res.json({ cid: body.cid, orderNo: uniqueOrderNumber(), paymentDue: dateTwoWeeksFromNow() })
       } catch (err) {
         if (utils.getErrorMessage(err).match(/Script execution timed out.*/) != null) {
